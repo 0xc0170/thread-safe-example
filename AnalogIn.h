@@ -73,7 +73,6 @@ public:
         return analogin_read_u16(&_adc);
     }
 
-#ifdef MBED_OPERATORS
     /** An operator shorthand for read()
      *
      * The float() operator can be used as a shorthand for read() to simplify common code sequences
@@ -90,7 +89,6 @@ public:
     operator float() {
         return read();
     }
-#endif
 
 protected:
     AnalogIn(void) {};
@@ -104,6 +102,8 @@ protected:
 
 } // namespace mbed
 
+
+#ifdef __CMSIS_RTOS
 
 #include "Mutex.h"
 
@@ -173,6 +173,8 @@ protected:
 };
 
 }
+
+#endif // __CMSIS_RTOS
 
 #endif // DEVICE_ANALOGIN
 

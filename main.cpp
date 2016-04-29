@@ -3,8 +3,9 @@
 
 Serial pc(USBTX, USBRX);
 
-rtos::AnalogIn xAxis(A0);
-rtos::AnalogIn yAxis(A1);
+AnalogIn xAxis(A0);
+AnalogIn yAxis(A1);
+DigitalOut led(LED1);
 
 void thread_function(const void* data)
 {
@@ -14,6 +15,7 @@ void thread_function(const void* data)
         x = xAxis.read() * 1000; // float (0->1) to int (0-1000)
         y = yAxis.read() * 1000;
         pc.printf("\rThread 2: X=%3d, Y=%3d\n", x, y);
+        led = !led;
     }
 }
 
