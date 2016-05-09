@@ -1,35 +1,46 @@
-#include "mbed.h"
-#include "rtos.h"
+#include <mbed.h>
+#include <rtos.h>
+#include <ITC/TaskQueue.h>
+#include <ITC/Expected.h>
+#include <ITC/defer.h>
 
 Serial pc(USBTX, USBRX);
 
-AnalogIn xAxis(A0);
-AnalogIn yAxis(A1);
-DigitalOut led(LED1);
+TaskQueue<5> queue;
 
-void thread_function(const void* data)
-{
-    int x,y;
-    while (true) {
-        Thread::wait(500);
-        x = xAxis.read() * 1000; // float (0->1) to int (0-1000)
-        y = yAxis.read() * 1000;
-        pc.printf("\rThread 2: X=%3d, Y=%3d\n", x, y);
-        led = !led;
-    }
+int add(int lhs, int rhs) {
+    pc.printf("add %i %i from thread %p\r\n", lhs, rhs, osThreadGetId());
+    return lhs + rhs;
+}
+
+void thread_function(const void* data) {
+    queue.run();
 }
 
 int main() {
-    int x,y;
     pc.baud(115200);
     pc.printf("Starting Example\n");
-    Thread thread(thread_function);
+    int lhs = 1;
+    int rhs = 1;
 
+    Thread thread(thread_function);
 
     while (true) {
         Thread::wait(500);
-        x = xAxis.read() * 1000; // float (0->1) to int (0-1000)
-        y = yAxis.read() * 1000;
-        pc.printf("\rX=%3d, Y=%3d\n", x, y);
+        pc.printf("posting from thread %p\r\n", osThreadGetId());
+
+        // defer execution of add(lhs,rhs) to the queue.
+        itc::Expected<int, bool> res = itc::defer_call(
+            queue,
+            mbed::util::FunctionPointer2<int,int,int>(add).bind(lhs, rhs)
+        );
+        if (res.has_value()) {
+            printf("from thread %p: result %i\r\n", osThreadGetId(), res.value());
+        } else {
+            printf("from thread %p: error\r\n", osThreadGetId());
+        }
+        lhs++;
+        rhs++;
     }
+    return 0;
 }
